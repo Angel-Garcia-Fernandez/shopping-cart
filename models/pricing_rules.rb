@@ -1,58 +1,21 @@
-module PricingRules
-	class PricingRule
-		attr_reader :product, :quantity_limit, :discount_number
+require 'ostruct'
+require_relative 'pricing_rule_factory'
 
-		def initialize product, quantity_limit = nil, discount_number = nil
-			@product, @quantity_limit, @discount_number = product, quantity_limit, discount_number
-		end
+# Collection products and pricing rules.
+class PricingRules
+  attr_reader :products
 
-		def perform product, quantity
-			product.price * quantity
-		end
+  def initialize
+    @products = {}
+  end
 
-		def rule_type
-			self.class.to_s.to_sym
-		end
-	end
+  def add_pricing(product, offer = nil, offer_opts = {})
+    @products[product.code] =
+      OpenStruct.new(product: product,
+                     pricing_rule: PricingRuleFactory.create(offer, offer_opts))
+  end
 
-	class GetFree < PricingRule
-		def initialize product, quantity_limit = 2
-			super( product, quantity_limit )
-		end
-
-		def perform product, quantity
-			free = quantity/quantity_limit
-			( quantity - free ) * product.price
-		end
-	end
-
-	class ExactPrice < PricingRule
-		def initialize product, quantity_limit, discount_number
-			super( product, quantity_limit, discount_number )
-		end
-
-		def perform product, quantity
-			quantity * ( quantity >= quantity_limit ? discount_number : product.price ) 
-		end
-	end
-
-	class DropDiscount < PricingRule
-		def initialize product, quantity_limit, discount_number
-			super( product, quantity_limit, discount_number )
-		end
-
-		def perform product, quantity
-			quantity * ( product.price - ( quantity >= quantity_limit ? discount_number : 0 ) )
-		end
-	end
-
-	class PercentageDiscount < PricingRule
-		def initialize product, quantity_limit, discount_number
-			super( product, quantity_limit, discount_number )
-		end
-
-		def perform product, quantity
-			quantity * ( product.price * ( 1 - (quantity >= quantity_limit ? discount_number : 0 ) ) )
-		end
-	end
+  def get_pricing(product_code)
+    @products[product_code]
+  end
 end
